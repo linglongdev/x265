@@ -1,0 +1,52 @@
+package:
+  id: x265
+  name: x265
+  version: 2.9
+  kind: lib
+  description: |
+    x265.
+
+base:
+  id: org.deepin.base
+  version: 20.5.0
+
+source:
+  kind: git
+  url: https://github.com/deepin-community/x265.git
+  version: master
+  commit: d66f8feedf6e6d515c68a33054a817224c712013
+  patch:
+  - 0001-Fix-arm-flags.patch
+  - 0002-Detect-x32-handle-as-non-x86-and-no-ASM-for-now-but-.patch
+  - 0003-Drop-dlopen-code-path-that-will-never-be-hit.patch
+variables:
+  conf_args: |
+    -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+    -DCMAKE_INSTALL_LIBDIR=lib/${TRIPLET} \
+    -DLIB_INSTALL_DIR=lib/${TRIPLET}
+  extra_args: |
+    -DENABLE_PIC=ON \
+    -DENABLE_ASSEMBLY=ON \
+    -DENABLE_CLI=OFF \
+    -DENABLE_SHARED=OFF \
+    -DEXPORT_C_API=OFF \
+    -DHIGH_BIT_DEPTH=ON
+
+build:
+  kind: manual
+  manual:
+    configure: |
+      cd source
+      export LDFLAGS="-L/source/source/x265-10bit -L/source/source/x265-12bit"
+      cmake -B x265-10bit ${conf_args} ${extra_args} 
+      cmake -B x265-12bit ${conf_args} ${extra_args} -DMAIN12=ON 
+      cmake -B x265-8bit  ${conf_args} \
+                          -DENABLE_PIC=ON \
+                          -DEXTRA_LIB="x265_main10.a;x265_main12.a" \
+                          -DLINKED_10BIT=ON \
+                          -DLINKED_12BIT=ON \
+                          -DCMAKE_SHARED_LINKER_FLAGS="-L/source/source/x265-10bit -L/source/source/x265-12bit"
+      cd /source/source/x265-10bit && make ${jobs} && mv libx265.a libx265_main10.a
+      cd /source/source/x265-12bit && make ${jobs} && mv libx265.a libx265_main12.a
+      cd /source/source/x265-8bit && make ${jobs}
+      make install 

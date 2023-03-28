@@ -1,0 +1,53 @@
+From: Sebastian Ramacher <sramacher@debian.org>
+Date: Sun, 22 Aug 2021 22:02:03 +0200
+Subject: Drop dlopen code path that will never be hit
+
+---
+ source/encoder/api.cpp | 27 ---------------------------
+ 1 file changed, 27 deletions(-)
+
+diff --git a/source/encoder/api.cpp b/source/encoder/api.cpp
+index a986355..e7dd9d1 100644
+--- a/source/encoder/api.cpp
++++ b/source/encoder/api.cpp
+@@ -1144,19 +1144,6 @@ const x265_api* x265_api_get(int bitDepth)
+             if (get)
+                 api = get(reqDepth);
+         }
+-#else
+-        void* h = dlopen(libname, RTLD_LAZY | RTLD_LOCAL);
+-        if (!h)
+-        {
+-            h = dlopen(multilibname, RTLD_LAZY | RTLD_LOCAL);
+-            reqDepth = bitDepth;
+-        }
+-        if (h)
+-        {
+-            api_get_func get = (api_get_func)dlsym(h, method);
+-            if (get)
+-                api = get(reqDepth);
+-        }
+ #endif
+ 
+         g_recursion--;
+@@ -1238,20 +1225,6 @@ const x265_api* x265_api_query(int bitDepth, int apiVersion, int* err)
+             if (query)
+                 api = query(reqDepth, apiVersion, err);
+         }
+-#else
+-        void* h = dlopen(libname, RTLD_LAZY | RTLD_LOCAL);
+-        if (!h)
+-        {
+-            h = dlopen(multilibname, RTLD_LAZY | RTLD_LOCAL);
+-            reqDepth = bitDepth;
+-        }
+-        if (h)
+-        {
+-            e = X265_API_QUERY_ERR_FUNC_NOT_FOUND;
+-            api_query_func query = (api_query_func)dlsym(h, method);
+-            if (query)
+-                api = query(reqDepth, apiVersion, err);
+-        }
+ #endif
+ 
+         g_recursion--;
